@@ -20,14 +20,14 @@ package org.apache.flink.table.sources.tsextractors
 
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.table.api.{Types, ValidationException}
-import org.apache.flink.table.expressions.{Cast, Expression, ResolvedFieldReference}
+import org.apache.flink.table.expressions.{Call, Cast, Expression, Literal, ResolvedFieldReference}
 
 /**
   * Converts an existing [[Long]] or [[java.sql.Timestamp]] field into a rowtime attribute.
   *
   * @param field The field to convert into a rowtime attribute.
   */
-class ExistingField(field: String) extends TimestampExtractor {
+class ExistingField(field: String, arguments: String*) extends TimestampExtractor {
 
   override def getArgumentFields: Array[String] = Array(field)
 
@@ -41,6 +41,7 @@ class ExistingField(field: String) extends TimestampExtractor {
     fieldType match {
       case Types.LONG => // OK
       case Types.SQL_TIMESTAMP => // OK
+      case Types.STRING => // OK
       case _: TypeInformation[_] =>
         throw ValidationException(
           s"Field '$field' must be of type Long or Timestamp but is of type $fieldType.")
@@ -62,6 +63,9 @@ class ExistingField(field: String) extends TimestampExtractor {
       case Types.SQL_TIMESTAMP =>
         // cast timestamp to long
         Cast(fieldAccess, Types.LONG)
+      case Types.STRING =>
+        // cast string to long with the internal UDF
+        Call("toEventTime", Seq(fieldAccess) ++ arguments.map(f => Literal(f)))
     }
   }
 

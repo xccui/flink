@@ -29,9 +29,9 @@ import org.apache.calcite.rex.{RexLiteral, RexNode}
 import org.apache.calcite.tools.RelBuilder
 import org.apache.flink.api.common.typeinfo.{AtomicType, SqlTimeTypeInfo, TypeInformation}
 import org.apache.flink.api.common.typeutils.CompositeType
-import org.apache.flink.table.api.{TableException, Types, ValidationException}
+import org.apache.flink.table.api.{TableEnvironment, TableException, Types, ValidationException}
 import org.apache.flink.table.calcite.FlinkTypeFactory
-import org.apache.flink.table.expressions.{Cast, ResolvedFieldReference}
+import org.apache.flink.table.expressions.{Call, Cast, ResolvedFieldReference}
 import org.apache.flink.table.typeutils.TimeIndicatorTypeInfo
 
 import scala.collection.JavaConverters._
@@ -337,6 +337,7 @@ object TableSourceUtil {
     * @return The [[RexNode]] expression to extract the timestamp of the table source.
     */
   def getRowtimeExtractionExpression(
+      tableEnv: TableEnvironment,
       tableSource: TableSource[_],
       selectedFields: Option[Array[Int]],
       cluster: RelOptCluster,
@@ -378,7 +379,11 @@ object TableSourceUtil {
         new Array[ResolvedFieldReference](0)
       }
 
-      val expression = tsExtractor.getExpression(fieldAccesses)
+      var expression = tsExtractor.getExpression(fieldAccesses)
+      expression = expression match {
+        case x : Call => tableEnv.functionCatalog.lookupFunction(x.functionName, x.args)
+        case _ => expression
+      }
       // add cast to requested type and convert expression to RexNode
       val rexExpression = Cast(expression, resultType).toRexNode(relBuilder)
       relBuilder.clear()

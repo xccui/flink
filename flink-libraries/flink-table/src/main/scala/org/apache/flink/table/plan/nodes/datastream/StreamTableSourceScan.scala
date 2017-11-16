@@ -105,6 +105,7 @@ class StreamTableSourceScan(
 
     // get expression to extract rowtime attribute
     val rowtimeExpression: Option[RexNode] = TableSourceUtil.getRowtimeExtractionExpression(
+      tableEnv,
       tableSource,
       selectedFields,
       cluster,

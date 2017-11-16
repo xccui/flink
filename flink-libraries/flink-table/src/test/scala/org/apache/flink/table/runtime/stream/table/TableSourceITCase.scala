@@ -19,6 +19,8 @@
 package org.apache.flink.table.runtime.stream.table
 
 import java.lang.{Boolean => JBool, Integer => JInt, Long => JLong}
+import java.text.SimpleDateFormat
+import java.util.TimeZone
 
 import org.apache.calcite.runtime.SqlFunctions.{internalToTimestamp => toTimestamp}
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -31,6 +33,7 @@ import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.util.StreamingMultipleProgramsTestBase
 import org.apache.flink.table.api.{TableEnvironment, TableException, TableSchema, Types}
 import org.apache.flink.table.api.scala._
+import org.apache.flink.table.functions.ScalarFunction
 import org.apache.flink.table.runtime.utils.{CommonTestData, StreamITCase}
 import org.apache.flink.table.sources.StreamTableSource
 import org.apache.flink.table.utils._
@@ -690,4 +693,51 @@ class TableSourceITCase extends StreamingMultipleProgramsTestBase {
       "3,Mike,30000,true,3000")
     assertEquals(expected.sorted, StreamITCase.testResults.sorted)
   }
+
+  @Test
+  def testRowtimeStringTableSource(): Unit = {
+    StreamITCase.testResults = mutable.MutableList()
+    val tableName = "MyTable"
+    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+    val tEnv = TableEnvironment.getTableEnvironment(env)
+
+    val data = Seq(
+      "1970-01-01 00:00:00",
+      "1970-01-01 00:00:01",
+      "1970-01-01 00:00:01",
+      "1970-01-01 00:00:02",
+      "1970-01-01 00:00:04")
+
+    val schema = new TableSchema(Array("rtime"), Array(Types.SQL_TIMESTAMP))
+    val returnType = Types.STRING
+
+    val tableSource = new TestTableSourceWithTime(schema, returnType, data, "rtime", null)
+    tEnv.registerTableSource(tableName, tableSource)
+
+    tEnv.registerFunction("toEventTime", str2EventTime)
+
+    tEnv.scan(tableName)
+      .window(Tumble over 1.second on 'rtime as 'w)
+      .groupBy('w)
+      .select('w.start, 1.count)
+      .addSink(new StreamITCase.StringSink[Row])
+    env.execute()
+
+    val expected = Seq(
+      "1970-01-01 00:00:00.0,1",
+      "1970-01-01 00:00:01.0,2",
+      "1970-01-01 00:00:02.0,1",
+      "1970-01-01 00:00:04.0,1")
+    assertEquals(expected.sorted, StreamITCase.testResults.sorted)
+  }
 }
+
+case object str2EventTime extends ScalarFunction {
+  def eval(value: String, pattern: String): Long = {
+    val format: SimpleDateFormat = new SimpleDateFormat(pattern)
+    format.setTimeZone(TimeZone.getTimeZone("GMT+0"))
+    format.parse(value).getTime
+  }
+}
+

@@ -60,7 +60,7 @@ class TestTableSourceWithTime[T](
     if (rowtime != null) {
       Collections.singletonList(new RowtimeAttributeDescriptor(
         rowtime,
-        new ExistingField(rowtime),
+        new ExistingField(rowtime, "yyyy-MM-dd HH:mm:ss"),
         new AscendingTimestamps))
     } else {
       Collections.EMPTY_LIST.asInstanceOf[util.List[RowtimeAttributeDescriptor]]
