@@ -120,6 +120,8 @@ class DataSetJoin(
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
     val config = tableEnv.getConfig
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     val returnType = FlinkTypeFactory.toInternalRowTypeInfo(getRowType)
 
@@ -173,7 +175,8 @@ class DataSetJoin(
           leftKeys.toArray,
           rightKeys.toArray,
           returnType,
-          config)
+          config,
+          parallelism)
       case JoinRelType.LEFT =>
         addLeftOuterJoin(
           leftDataSet,
@@ -181,7 +184,8 @@ class DataSetJoin(
           leftKeys.toArray,
           rightKeys.toArray,
           returnType,
-          config)
+          config,
+          parallelism)
       case JoinRelType.RIGHT =>
         addRightOuterJoin(
           leftDataSet,
@@ -189,7 +193,8 @@ class DataSetJoin(
           leftKeys.toArray,
           rightKeys.toArray,
           returnType,
-          config)
+          config,
+          parallelism)
       case JoinRelType.FULL =>
         addFullOuterJoin(
           leftDataSet,
@@ -197,7 +202,8 @@ class DataSetJoin(
           leftKeys.toArray,
           rightKeys.toArray,
           returnType,
-          config)
+          config,
+          parallelism)
     }
   }
 
@@ -207,7 +213,8 @@ class DataSetJoin(
       leftKeys: Array[Int],
       rightKeys: Array[Int],
       resultType: TypeInformation[Row],
-      config: TableConfig): DataSet[Row] = {
+      config: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     val generator = new FunctionCodeGenerator(
       config,
@@ -243,6 +250,7 @@ class DataSetJoin(
       .where(leftKeys: _*)
       .equalTo(rightKeys: _*)
       .`with`(joinFun)
+      .setParallelism(parallelism)
       .name(getJoinOpName)
   }
 
@@ -252,7 +260,8 @@ class DataSetJoin(
       leftKeys: Array[Int],
       rightKeys: Array[Int],
       resultType: TypeInformation[Row],
-      config: TableConfig): DataSet[Row] = {
+      config: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     if (!config.getNullCheck) {
       throw TableException("Null check in TableConfig must be enabled for outer joins.")
@@ -270,7 +279,8 @@ class DataSetJoin(
     val partitionedSortedLeft: DataSet[Row] = partitionAndSort(left, leftKeys)
 
     // fold identical rows of the left input
-    val foldedRowsLeft: DataSet[Row] = foldIdenticalRows(partitionedSortedLeft, leftType)
+    val foldedRowsLeft: DataSet[Row] =
+      foldIdenticalRows(partitionedSortedLeft, leftType, parallelism)
 
     // create JoinFunction to evaluate join predicate
     val predFun = generatePredicateFunction(leftType, rightType, config)
@@ -284,6 +294,7 @@ class DataSetJoin(
       .equalTo(rightKeys: _*)
       .`with`(joinFun)
       .withForwardedFieldsFirst("f0->f0")
+      .setParallelism(parallelism)
       .name(joinOpName)
 
     // create GroupReduceFunction to generate the join result
@@ -298,6 +309,7 @@ class DataSetJoin(
     joinPairs
       .groupBy("f0")
       .reduceGroup(reduceFun)
+      .setParallelism(parallelism)
       .name(joinOpName)
       .returns(resultType)
   }
@@ -308,7 +320,8 @@ class DataSetJoin(
       leftKeys: Array[Int],
       rightKeys: Array[Int],
       resultType: TypeInformation[Row],
-      config: TableConfig): DataSet[Row] = {
+      config: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     if (!config.getNullCheck) {
       throw TableException("Null check in TableConfig must be enabled for outer joins.")
@@ -326,7 +339,8 @@ class DataSetJoin(
     val partitionedSortedRight: DataSet[Row] = partitionAndSort(right, rightKeys)
 
     // fold identical rows of the right input
-    val foldedRowsRight: DataSet[Row] = foldIdenticalRows(partitionedSortedRight, rightType)
+    val foldedRowsRight: DataSet[Row] =
+      foldIdenticalRows(partitionedSortedRight, rightType, parallelism)
 
     // create JoinFunction to evaluate join predicate
     val predFun = generatePredicateFunction(leftType, rightType, config)
@@ -340,6 +354,7 @@ class DataSetJoin(
       .equalTo(nestedRightKeys: _*)
       .`with`(joinFun)
       .withForwardedFieldsSecond("f0->f1")
+      .setParallelism(parallelism)
       .name(joinOpName)
 
     // create GroupReduceFunction to generate the join result
@@ -354,6 +369,7 @@ class DataSetJoin(
     joinPairs
       .groupBy("f1")
       .reduceGroup(reduceFun)
+      .setParallelism(parallelism)
       .name(joinOpName)
       .returns(resultType)
   }
@@ -364,7 +380,8 @@ class DataSetJoin(
       leftKeys: Array[Int],
       rightKeys: Array[Int],
       resultType: TypeInformation[Row],
-      config: TableConfig): DataSet[Row] = {
+      config: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     if (!config.getNullCheck) {
       throw TableException("Null check in TableConfig must be enabled for outer joins.")
@@ -383,8 +400,10 @@ class DataSetJoin(
     val partitionedSortedRight: DataSet[Row] = partitionAndSort(right, rightKeys)
 
     // fold identical rows of the left and right input
-    val foldedRowsLeft: DataSet[Row] = foldIdenticalRows(partitionedSortedLeft, leftType)
-    val foldedRowsRight: DataSet[Row] = foldIdenticalRows(partitionedSortedRight, rightType)
+    val foldedRowsLeft: DataSet[Row] =
+      foldIdenticalRows(partitionedSortedLeft, leftType, parallelism)
+    val foldedRowsRight: DataSet[Row] =
+      foldIdenticalRows(partitionedSortedRight, rightType, parallelism)
 
     // create JoinFunction to evaluate join predicate
     val predFun = generatePredicateFunction(leftType, rightType, config)
@@ -401,6 +420,7 @@ class DataSetJoin(
       .`with`(joinFun)
       .withForwardedFieldsFirst("f0->f0")
       .withForwardedFieldsSecond("f0->f1")
+      .setParallelism(parallelism)
       .name(joinOpName)
 
     // create GroupReduceFunctions to generate the join result
@@ -421,6 +441,7 @@ class DataSetJoin(
         override def filter(row: Row): Boolean = row.getField(0) != null})
       .groupBy("f0")
       .reduceGroup(leftReduceFun)
+      .setParallelism(parallelism)
       .name(joinOpName)
       .returns(resultType)
 
@@ -431,11 +452,12 @@ class DataSetJoin(
         override def filter(row: Row): Boolean = row.getField(1) != null})
       .groupBy("f1")
       .reduceGroup(rightReduceFun)
+      .setParallelism(parallelism)
       .name(joinOpName)
       .returns(resultType)
 
     // union joined (left + right), left preserved (left + null), and right preserved (null + right)
-    joinedAndLeftPreserved.union(rightPreserved)
+    joinedAndLeftPreserved.union(rightPreserved).setParallelism(parallelism)
   }
 
   private def getJoinOpName: String = {
@@ -474,7 +496,8 @@ class DataSetJoin(
     */
   private def foldIdenticalRows(
       dataSet: DataSet[Row],
-      dataSetType: TypeInformation[Row]): DataSet[Row] = {
+      dataSetType: TypeInformation[Row],
+      parallelism: Int): DataSet[Row] = {
 
     val resultType = new RowTypeInfo(dataSetType, Types.INT)
     val groupKeys = 0 until dataSetType.getArity
@@ -500,6 +523,7 @@ class DataSetJoin(
           out.collect(outTuple)
         }
       })
+      .setParallelism(parallelism)
       .returns(resultType)
       .withForwardedFields("*->f0")
       .name("fold identical rows")

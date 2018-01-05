@@ -64,6 +64,8 @@ class DataStreamScan(
     val config = tableEnv.getConfig
     val inputDataStream: DataStream[Any] = dataStreamTable.dataStream
     val fieldIdxs = dataStreamTable.fieldIndexes
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     // get expression to extract timestamp
     val rowtimeExpr: Option[RexNode] =
@@ -79,7 +81,7 @@ class DataStreamScan(
       }
 
     // convert DataStream
-    convertToInternalRow(schema, inputDataStream, fieldIdxs, config, rowtimeExpr)
+    convertToInternalRow(schema, inputDataStream, fieldIdxs, config, rowtimeExpr, parallelism)
   }
 
 }

@@ -80,12 +80,16 @@ class DataSetDistinct(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val inputDS = getInput.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val groupKeys = (0 until rowRelDataType.getFieldCount).toArray // group on all fields
 
     inputDS
       .groupBy(groupKeys: _*)
       .reduce(new DistinctReduce)
+      .setParallelism(parallelism)
       .setCombineHint(CombineHint.HASH) // use hash-combiner
       .name("distinct")
       .returns(inputDS.getType)

@@ -107,6 +107,9 @@ class DataStreamOverAggregate(
 
     val overWindow: org.apache.calcite.rel.core.Window.Group = logicWindow.groups.get(0)
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val orderKeys = overWindow.orderKeys.getFieldCollations
 
     if (orderKeys.size() != 1) {
@@ -177,7 +180,8 @@ class DataStreamOverAggregate(
         inputDS,
         rowTimeIdx,
         aggregateInputType,
-        isRowsClause = overWindow.isRows)
+        isRowsClause = overWindow.isRows,
+        parallelism)
     } else if (
       overWindow.lowerBound.isPreceding && !overWindow.lowerBound.isUnbounded &&
         overWindow.upperBound.isCurrentRow) {
@@ -190,7 +194,8 @@ class DataStreamOverAggregate(
         rowTimeIdx,
         aggregateInputType,
         isRowsClause = overWindow.isRows,
-        tableEnv.getConfig)
+        tableEnv.getConfig,
+        parallelism)
     } else {
       throw new TableException("OVER RANGE FOLLOWING windows are not supported yet.")
     }
@@ -203,7 +208,8 @@ class DataStreamOverAggregate(
     inputDS: DataStream[CRow],
     rowTimeIdx: Option[Int],
     aggregateInputType: RelDataType,
-    isRowsClause: Boolean): DataStream[CRow] = {
+    isRowsClause: Boolean,
+    parallelism: Int): DataStream[CRow] = {
 
     val overWindow: Group = logicWindow.groups.get(0)
 
@@ -233,6 +239,7 @@ class DataStreamOverAggregate(
         inputDS
           .keyBy(new CRowKeySelector(partitionKeys, inputSchema.projectedTypeInfo(partitionKeys)))
           .process(processFunction)
+          .setParallelism(parallelism)
           .returns(returnTypeInfo)
           .name(aggOpName)
           .asInstanceOf[DataStream[CRow]]
@@ -254,7 +261,8 @@ class DataStreamOverAggregate(
     rowTimeIdx: Option[Int],
     aggregateInputType: RelDataType,
     isRowsClause: Boolean,
-    tableConfig: TableConfig): DataStream[CRow] = {
+    tableConfig: TableConfig,
+    parallelism: Int): DataStream[CRow] = {
 
     val overWindow: Group = logicWindow.groups.get(0)
 
@@ -287,6 +295,7 @@ class DataStreamOverAggregate(
         inputDS
           .keyBy(new CRowKeySelector(partitionKeys, inputSchema.projectedTypeInfo(partitionKeys)))
           .process(processFunction)
+          .setParallelism(parallelism)
           .returns(returnTypeInfo)
           .name(aggOpName)
       }

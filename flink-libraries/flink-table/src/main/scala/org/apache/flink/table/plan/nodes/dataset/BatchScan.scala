@@ -19,6 +19,7 @@
 package org.apache.flink.table.plan.nodes.dataset
 
 import org.apache.calcite.rex.RexNode
+import org.apache.flink.api.common.ExecutionConfig
 import org.apache.flink.api.common.functions.MapFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.api.java.DataSet
@@ -65,7 +66,7 @@ trait BatchScan extends CommonScan[Row] with DataSetRel {
 
       val opName = s"from: (${schema.fieldNames.mkString(", ")})"
 
-      input.map(runner).name(opName)
+      input.map(runner).setParallelism(ExecutionConfig.PARALLELISM_DEFAULT).name(opName)
     }
     // no conversion necessary, forward
     else {

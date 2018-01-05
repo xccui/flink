@@ -81,10 +81,13 @@ class DataSetUnion(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val leftDataSet = left.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val rightDataSet = right.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
-    leftDataSet.union(rightDataSet)
+    leftDataSet.union(rightDataSet).setParallelism(parallelism)
   }
 
   private def unionSelectionToString: String = {

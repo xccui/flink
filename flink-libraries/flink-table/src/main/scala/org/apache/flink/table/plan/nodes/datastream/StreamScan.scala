@@ -40,7 +40,8 @@ trait StreamScan extends CommonScan[CRow] with DataStreamRel {
       input: DataStream[Any],
       fieldIdxs: Array[Int],
       config: TableConfig,
-      rowtimeExpression: Option[RexNode]): DataStream[CRow] = {
+      rowtimeExpression: Option[RexNode],
+      parallelism: Int): DataStream[CRow] = {
 
     val inputType = input.getType
     val internalType = schema.typeInfo
@@ -66,7 +67,7 @@ trait StreamScan extends CommonScan[CRow] with DataStreamRel {
           outCRow.row = v
           outCRow
         }
-      }).returns(cRowType)
+      }).setParallelism(parallelism).returns(cRowType)
 
     } else {
       // input needs to be converted and wrapped as CRow or time indicators need to be generated
@@ -88,7 +89,7 @@ trait StreamScan extends CommonScan[CRow] with DataStreamRel {
 
       val opName = s"from: (${schema.fieldNames.mkString(", ")})"
 
-      input.process(processFunc).name(opName).returns(cRowType)
+      input.process(processFunc).setParallelism(parallelism).name(opName).returns(cRowType)
     }
   }
 

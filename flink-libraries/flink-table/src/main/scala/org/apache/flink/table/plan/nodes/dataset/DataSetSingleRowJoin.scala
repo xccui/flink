@@ -95,6 +95,9 @@ class DataSetSingleRowJoin(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val leftDataSet = left.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val rightDataSet = right.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val broadcastSetName = "joinSet"
@@ -115,6 +118,7 @@ class DataSetSingleRowJoin(
     multiRowDataSet
       .flatMap(mapSideJoin)
       .withBroadcastSet(singleRowDataSet, broadcastSetName)
+      .setParallelism(parallelism)
       .name(getMapOperatorName)
   }
 

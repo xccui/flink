@@ -71,6 +71,8 @@ class DataSetValues(
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
     val config = tableEnv.getConfig
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     val returnType = FlinkTypeFactory.toInternalRowTypeInfo(getRowType)
 
@@ -95,7 +97,7 @@ class DataSetValues(
       generatedFunction.code,
       generatedFunction.returnType)
 
-    tableEnv.execEnv.createInput(inputFormat, returnType)
+    tableEnv.execEnv.createInput(inputFormat, returnType).setParallelism(parallelism)
   }
 
   private def valuesFieldsToString: String = {

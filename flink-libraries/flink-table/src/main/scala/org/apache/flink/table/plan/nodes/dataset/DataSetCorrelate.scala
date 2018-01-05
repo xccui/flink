@@ -97,6 +97,8 @@ class DataSetCorrelate(
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
     val config = tableEnv.getConfig
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     // we do not need to specify input type
     val inputDS = inputNode.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
@@ -135,6 +137,7 @@ class DataSetCorrelate(
 
     inputDS
       .flatMap(mapFunc)
+      .setParallelism(parallelism)
       .name(correlateOpName(
         inputNode.getRowType,
         rexCall,

@@ -94,6 +94,8 @@ class StreamTableSourceScan(
     val config = tableEnv.getConfig
     val inputDataStream = tableSource.getDataStream(tableEnv.execEnv).asInstanceOf[DataStream[Any]]
     val outputSchema = new RowSchema(this.getRowType)
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     // check that declared and actual type of table source DataStream are identical
     if (inputDataStream.getType != tableSource.getReturnType) {
@@ -118,7 +120,8 @@ class StreamTableSourceScan(
       inputDataStream,
       fieldIndexes,
       config,
-      rowtimeExpression)
+      rowtimeExpression,
+      parallelism)
 
     // generate watermarks for rowtime indicator
     val rowtimeDesc: Option[RowtimeAttributeDescriptor] =

@@ -148,6 +148,7 @@ case class BatchTableTestUtil() extends TableTestUtil {
   val javaEnv = mock(classOf[JExecutionEnvironment])
   val javaTableEnv = TableEnvironment.getTableEnvironment(javaEnv)
   val env = mock(classOf[ExecutionEnvironment])
+  when(env.getJavaEnv).thenReturn(javaEnv)
   val tableEnv = TableEnvironment.getTableEnvironment(env)
 
   def addTable[T: TypeInformation](

@@ -114,6 +114,9 @@ class DataStreamGroupAggregate(
 
     val outRowType = CRowTypeInfo(schema.typeInfo)
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val generator = new AggregationCodeGenerator(
       tableEnv.getConfig,
       false,
@@ -148,6 +151,7 @@ class DataStreamGroupAggregate(
         inputDS
         .keyBy(new CRowKeySelector(groupings, inputSchema.projectedTypeInfo(groupings)))
         .process(processFunction)
+        .setParallelism(parallelism)
         .returns(outRowType)
         .name(keyedAggOpName)
         .asInstanceOf[DataStream[CRow]]

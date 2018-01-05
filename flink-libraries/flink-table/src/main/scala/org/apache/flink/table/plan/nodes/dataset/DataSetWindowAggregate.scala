@@ -20,6 +20,7 @@ package org.apache.flink.table.plan.nodes.dataset
 import org.apache.calcite.plan.{RelOptCluster, RelOptCost, RelOptPlanner, RelTraitSet}
 import org.apache.calcite.rel.`type`.RelDataType
 import org.apache.calcite.rel.core.AggregateCall
+import org.apache.calcite.rel.metadata.BuiltInMetadata.Parallelism
 import org.apache.calcite.rel.metadata.RelMetadataQuery
 import org.apache.calcite.rel.{RelNode, RelWriter, SingleRel}
 import org.apache.flink.api.common.operators.Order
@@ -109,6 +110,9 @@ class DataSetWindowAggregate(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val inputDS = getInput.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
     val generator = new AggregationCodeGenerator(
@@ -128,11 +132,17 @@ class DataSetWindowAggregate(
           inputDS,
           isTimeIntervalLiteral(size),
           caseSensitive,
-          tableEnv.getConfig)
+          tableEnv.getConfig,
+          parallelism)
 
       case SessionGroupWindow(_, timeField, gap)
           if isTimePoint(timeField.resultType) || isLong(timeField.resultType) =>
-        createEventTimeSessionWindowDataSet(generator, inputDS, caseSensitive, tableEnv.getConfig)
+        createEventTimeSessionWindowDataSet(
+          generator,
+          inputDS,
+          caseSensitive,
+          tableEnv.getConfig,
+          parallelism)
 
       case SlidingGroupWindow(_, timeField, size, slide)
           if isTimePoint(timeField.resultType) || isLong(timeField.resultType) =>
@@ -143,7 +153,8 @@ class DataSetWindowAggregate(
           asLong(size),
           asLong(slide),
           caseSensitive,
-          tableEnv.getConfig)
+          tableEnv.getConfig,
+          parallelism)
 
       case _ =>
         throw new UnsupportedOperationException(
@@ -156,7 +167,8 @@ class DataSetWindowAggregate(
       inputDS: DataSet[Row],
       isTimeWindow: Boolean,
       isParserCaseSensitive: Boolean,
-      tableConfig: TableConfig): DataSet[Row] = {
+      tableConfig: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     val input = inputNode.asInstanceOf[DataSetRel]
 
@@ -182,6 +194,7 @@ class DataSetWindowAggregate(
 
     val mappedInput = inputDS
       .map(mapFunction)
+      .setParallelism(parallelism)
       .name(prepareOperatorName)
 
     val rowTypeInfo = FlinkTypeFactory.toInternalRowTypeInfo(getRowType)
@@ -194,6 +207,7 @@ class DataSetWindowAggregate(
       mappedInput.asInstanceOf[DataSet[Row]]
         .groupBy(groupingKeys: _*)
         .reduceGroup(groupReduceFunction)
+        .setParallelism(parallelism)
         .returns(rowTypeInfo)
         .name(aggregateOperatorName)
     } else {
@@ -206,6 +220,7 @@ class DataSetWindowAggregate(
           // sort on time field, it's the last element in the row
           .sortGroup(mapReturnType.getArity - 1, Order.ASCENDING)
           .reduceGroup(groupReduceFunction)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggregateOperatorName)
       } else {
@@ -221,7 +236,8 @@ class DataSetWindowAggregate(
       generator: AggregationCodeGenerator,
       inputDS: DataSet[Row],
       isParserCaseSensitive: Boolean,
-      tableConfig: TableConfig): DataSet[Row] = {
+      tableConfig: TableConfig,
+      parallelism: Int): DataSet[Row] = {
 
     val input = inputNode.asInstanceOf[DataSetRel]
 
@@ -239,7 +255,7 @@ class DataSetWindowAggregate(
       isParserCaseSensitive,
       tableConfig)
 
-    val mappedInput = inputDS.map(mapFunction).name(prepareOperatorName)
+    val mappedInput = inputDS.map(mapFunction).setParallelism(parallelism).name(prepareOperatorName)
 
     val mapReturnType = mapFunction.asInstanceOf[ResultTypeQueryable[Row]].getProducedType
 
@@ -285,10 +301,12 @@ class DataSetWindowAggregate(
           .groupBy(groupingKeys: _*)
           .sortGroup(rowTimeFieldPos, Order.ASCENDING)
           .combineGroup(combineGroupFunction)
+          .setParallelism(parallelism)
           .groupBy(groupingKeys: _*)
           .sortGroup(windowStartPos, Order.ASCENDING)
           .sortGroup(windowEndPos, Order.ASCENDING)
           .reduceGroup(groupReduceFunction)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggregateOperatorName)
       } else {
@@ -344,6 +362,7 @@ class DataSetWindowAggregate(
         mappedInput.groupBy(groupingKeys: _*)
           .sortGroup(rowTimeFieldPos, Order.ASCENDING)
           .reduceGroup(groupReduceFunction)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggregateOperatorName)
       } else {
@@ -375,7 +394,8 @@ class DataSetWindowAggregate(
       size: Long,
       slide: Long,
       isParserCaseSensitive: Boolean,
-      tableConfig: TableConfig)
+      tableConfig: TableConfig,
+      parallelism: Int)
     : DataSet[Row] = {
 
     val input = inputNode.asInstanceOf[DataSetRel]
@@ -394,6 +414,7 @@ class DataSetWindowAggregate(
 
     val mappedDataSet = inputDS
       .map(mapFunction)
+      .setParallelism(parallelism)
       .name(prepareOperatorName)
 
     val mapReturnType = mappedDataSet.getType
@@ -434,6 +455,7 @@ class DataSetWindowAggregate(
         mappedDataSet.asInstanceOf[DataSet[Row]]
           .groupBy(groupingKeysAndAlignedRowtime: _*)
           .reduceGroup(prepareReduceFunction) // pre-tumbles and replicates/omits
+          .setParallelism(parallelism)
           .name(prepareOperatorName)
       } else {
         // non-partial aggregates
@@ -448,7 +470,7 @@ class DataSetWindowAggregate(
           isParserCaseSensitive)
 
         mappedDataSet
-          .flatMap(prepareFlatMapFunction) // replicates/omits
+          .flatMap(prepareFlatMapFunction).setParallelism(parallelism) // replicates/omits
       }
     } else {
       // count window
@@ -480,6 +502,7 @@ class DataSetWindowAggregate(
     preparedDataSet
       .groupBy(groupingKeysAndWindowStart: _*)
       .reduceGroup(aggregateReduceFunction)
+      .setParallelism(parallelism)
       .returns(rowTypeInfo)
       .name(aggregateOperatorName)
   }

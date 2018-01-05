@@ -88,6 +88,8 @@ class DataSetSort(
     }
 
     val config = tableEnv.getConfig
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     val inputDs = inp.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
@@ -97,10 +99,13 @@ class DataSetSort(
     } else {
       inputDs.partitionByRange(fieldCollations.map(_._1): _*)
         .withOrders(fieldCollations.map(_._2): _*)
+        .setParallelism(parallelism)
     }
 
     fieldCollations.foreach { fieldCollation =>
-      partitionedDs = partitionedDs.sortPartition(fieldCollation._1, fieldCollation._2)
+      partitionedDs = partitionedDs
+        .sortPartition(fieldCollation._1, fieldCollation._2)
+        .setParallelism(parallelism)
     }
 
     if (offset == null && fetch == null) {
@@ -112,6 +117,7 @@ class DataSetSort(
 
       val partitionCount = partitionedDs
         .mapPartition(countFunction)
+        .setParallelism(parallelism)
         .name(partitionCountName)
 
       val broadcastName = "countPartition"
@@ -127,6 +133,7 @@ class DataSetSort(
         .filter(limitFunction)
         .name(limitName)
         .withBroadcastSet(partitionCount, broadcastName)
+        .setParallelism(parallelism)
     }
   }
 

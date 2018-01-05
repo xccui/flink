@@ -55,6 +55,11 @@ class TableConfig {
   private var maxGeneratedCodeLength: Int = 64000 // just an estimate
 
   /**
+    * Defines the execution parallelism for queries on this table.
+    */
+  private var parallelism: Option[Int] = None
+
+  /**
    * Sets the timezone for date/time/timestamp conversions.
    */
   def setTimeZone(timeZone: TimeZone): Unit = {
@@ -123,6 +128,21 @@ class TableConfig {
       throw new IllegalArgumentException("Length must be greater than 0.")
     }
     this.maxGeneratedCodeLength = maxGeneratedCodeLength
+  }
+
+  /**
+    * Returns the parallelism for queries in this table environment.
+    *
+    * @return the parallelism value or none if the parallelism is not set
+    */
+  def getParallelism: Option[Int] = parallelism
+
+  /**
+    * Sets the execution parallelism for queries in this table environment. The value set via this
+    * function maybe overridden by the parallelism set in [[QueryConfig]].
+    */
+  def setParallelism(parallelism: Int) = {
+    this.parallelism = Option(parallelism)
   }
 }
 

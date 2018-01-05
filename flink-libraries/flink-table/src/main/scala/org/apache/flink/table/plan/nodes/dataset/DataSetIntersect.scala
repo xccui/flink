@@ -78,6 +78,9 @@ class DataSetIntersect(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val leftDataSet = left.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
     val rightDataSet = right.asInstanceOf[DataSetRel].translateToPlan(tableEnv, queryConfig)
 
@@ -90,6 +93,7 @@ class DataSetIntersect(
       .where("*")
       .equalTo("*")
       .`with`(coGroupFunction)
+      .setParallelism(parallelism)
       .name(coGroupOpName)
   }
 

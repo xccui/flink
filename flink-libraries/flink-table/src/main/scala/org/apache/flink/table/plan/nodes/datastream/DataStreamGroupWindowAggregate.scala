@@ -122,6 +122,9 @@ class DataStreamGroupWindowAggregate(
 
     val inputIsAccRetract = DataStreamRetractionRules.isAccRetract(input)
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     if (inputIsAccRetract) {
       throw new TableException(
         "Retraction on windowed GroupBy aggregation is not supported yet. " +
@@ -212,6 +215,7 @@ class DataStreamGroupWindowAggregate(
 
       windowedStream
         .aggregate(aggFunction, windowFunction, accumulatorRowType, aggResultRowType, outRowType)
+        .setParallelism(parallelism)
         .name(keyedAggOpName)
     }
     // global / non-keyed aggregation

@@ -22,7 +22,28 @@ import _root_.java.io.Serializable
 
 import org.apache.flink.api.common.time.Time
 
-class QueryConfig private[table] extends Serializable {}
+class QueryConfig private[table] extends Serializable {
+
+  /** The parallelism for executing the query. */
+  private var parallelism: Option[Int] = None
+
+  /**
+    * Sets the execution parallelism for the query. The value set via this function takes precedence
+    * over the value set in [[TableConfig]].
+    *
+    * @param parallelism the parallelism for executing the query
+    */
+  def setParallelism(parallelism: Int): Unit = {
+    this.parallelism = Option(parallelism)
+  }
+
+  /**
+    * Returns the parallelism set for executing this query.
+    *
+    * @return the parallelism value if set; [[None]] if not set
+    */
+  def getParallelism: Option[Int] = parallelism
+}
 
 /**
   * The [[BatchQueryConfig]] holds parameters to configure the behavior of batch queries.

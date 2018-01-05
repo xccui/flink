@@ -129,6 +129,8 @@ class DataStreamWindowJoin(
     val rightKeys = joinInfo.rightKeys.toIntArray
     val relativeWindowSize = leftUpperBound - leftLowerBound
     val returnTypeInfo = CRowTypeInfo(schema.typeInfo)
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      config.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
 
     // generate join function
     val joinFunction =
@@ -169,6 +171,7 @@ class DataStreamWindowJoin(
           flinkJoinType,
           leftDataStream,
           rightDataStream,
+          parallelism,
           returnTypeInfo,
           joinOpName,
           joinFunction.name,
@@ -181,6 +184,7 @@ class DataStreamWindowJoin(
           flinkJoinType,
           leftDataStream,
           rightDataStream,
+          parallelism,
           returnTypeInfo,
           joinOpName,
           joinFunction.name,
@@ -240,6 +244,7 @@ class DataStreamWindowJoin(
       joinType: JoinType,
       leftDataStream: DataStream[CRow],
       rightDataStream: DataStream[CRow],
+      parallelism: Int,
       returnTypeInfo: TypeInformation[CRow],
       operatorName: String,
       joinFunctionName: String,
@@ -263,6 +268,7 @@ class DataStreamWindowJoin(
           new CRowKeySelector(rightKeys, rightSchema.projectedTypeInfo(rightKeys)))
         .process(procJoinFunc)
         .name(operatorName)
+        .setParallelism(parallelism)
         .returns(returnTypeInfo)
     } else {
       leftDataStream.connect(rightDataStream)
@@ -279,6 +285,7 @@ class DataStreamWindowJoin(
       joinType: JoinType,
       leftDataStream: DataStream[CRow],
       rightDataStream: DataStream[CRow],
+      parallelism: Int,
       returnTypeInfo: TypeInformation[CRow],
       operatorName: String,
       joinFunctionName: String,
@@ -311,6 +318,7 @@ class DataStreamWindowJoin(
             rowTimeJoinFunc,
             rowTimeJoinFunc.getMaxOutputDelay)
         )
+        .setParallelism(parallelism)
     } else {
       leftDataStream.connect(rightDataStream)
         .keyBy(new NullByteKeySelector[CRow](), new NullByteKeySelector[CRow])

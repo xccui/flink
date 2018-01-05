@@ -89,6 +89,9 @@ class DataSetAggregate(
       tableEnv: BatchTableEnvironment,
       queryConfig: BatchQueryConfig): DataSet[Row] = {
 
+    val parallelism = queryConfig.getParallelism.getOrElse(
+      tableEnv.getConfig.getParallelism.getOrElse(tableEnv.execEnv.getParallelism))
+
     val input = inputNode.asInstanceOf[DataSetRel]
     val inputDS = input.translateToPlan(tableEnv, queryConfig)
 
@@ -125,17 +128,20 @@ class DataSetAggregate(
           // pre-aggregation
           .groupBy(grouping: _*)
           .combineGroup(preAgg.get)
+          .setParallelism(parallelism)
           .returns(preAggType.get)
           .name(aggOpName)
           // final aggregation
           .groupBy(grouping.indices: _*)
           .reduceGroup(finalAgg.right.get)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggOpName)
       } else {
         inputDS
           .groupBy(grouping: _*)
           .reduceGroup(finalAgg.left.get)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggOpName)
       }
@@ -148,10 +154,12 @@ class DataSetAggregate(
         inputDS
           // pre-aggregation
           .mapPartition(preAgg.get)
+          .setParallelism(parallelism)
           .returns(preAggType.get)
           .name(aggOpName)
           // final aggregation
           .reduceGroup(finalAgg.right.get)
+          .setParallelism(parallelism)
           .returns(rowTypeInfo)
           .name(aggOpName)
       } else {
