@@ -37,6 +37,7 @@ import org.apache.flink.api.java.typeutils.{MapTypeInfo, MultisetTypeInfo, Objec
 import org.apache.flink.table.api.TableException
 import org.apache.flink.table.calcite.FlinkTypeFactory.typeInfoToSqlTypeName
 import org.apache.flink.table.plan.schema._
+import org.apache.flink.table.runtime.types.GeomTypeInfo
 import org.apache.flink.table.typeutils.TypeCheckUtils.isSimple
 import org.apache.flink.table.typeutils.{TimeIndicatorTypeInfo, TimeIntervalTypeInfo}
 import org.apache.flink.types.Row
@@ -452,6 +453,8 @@ object FlinkTypeFactory {
     case MULTISET if relDataType.isInstanceOf[MultisetRelDataType] =>
       val multisetRelDataType = relDataType.asInstanceOf[MultisetRelDataType]
       multisetRelDataType.typeInfo
+
+    case GEOMETRY => GeomTypeInfo.GEOM
 
     case _@t =>
       throw TableException(s"Type is not supported: $t")

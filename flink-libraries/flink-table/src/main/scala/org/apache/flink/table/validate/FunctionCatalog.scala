@@ -273,7 +273,12 @@ object FunctionCatalog {
     // crypto hash
     "md5" -> classOf[Md5],
     "sha1" -> classOf[Sha1],
-    "sha256" -> classOf[Sha256]
+    "sha256" -> classOf[Sha256],
+
+    // geometric
+    "stPointFromText" -> classOf[STPointFromText],
+    "stAsText" -> classOf[STAsText],
+    "stGeomFromText" -> classOf[STGeomFromText]
   )
 
   /**
@@ -433,6 +438,10 @@ class BasicOperatorTable extends ReflectiveSqlOperatorTable {
     ScalarSqlFunctions.MD5,
     ScalarSqlFunctions.SHA1,
     ScalarSqlFunctions.SHA256,
+    //GEOMETRIC_FUNCTIONS
+    ScalarSqlFunctions.ST_POINT_FROM_TEXT,
+    ScalarSqlFunctions.ST_AS_TEXT,
+    ScalarSqlFunctions.ST_GEOM_FROM_TEXT,
 
     // EXTENSIONS
     BasicOperatorTable.TUMBLE,
@@ -539,5 +548,4 @@ object BasicOperatorTable {
       SqlFunctionCategory.SYSTEM)
   val SESSION_PROCTIME: SqlGroupedWindowFunction =
     SESSION.auxiliary("SESSION_PROCTIME", SqlKind.OTHER_FUNCTION)
-
 }

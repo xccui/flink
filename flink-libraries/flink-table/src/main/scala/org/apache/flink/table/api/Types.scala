@@ -19,8 +19,10 @@ package org.apache.flink.table.api
 
 import _root_.java.{lang, math, sql, util}
 
+import org.apache.calcite.runtime.GeoFunctions.Geom
 import org.apache.flink.api.common.typeinfo.{PrimitiveArrayTypeInfo, TypeInformation, Types => JTypes}
 import org.apache.flink.api.java.typeutils.{MapTypeInfo, MultisetTypeInfo, ObjectArrayTypeInfo}
+import org.apache.flink.table.runtime.types.GeomTypeInfo
 import org.apache.flink.table.typeutils.TimeIntervalTypeInfo
 import org.apache.flink.types.Row
 
@@ -100,6 +102,11 @@ object Types {
     * Returns type information for a Table API interval milliseconds.
     */
   val INTERVAL_MILLIS: TypeInformation[lang.Long] = TimeIntervalTypeInfo.INTERVAL_MILLIS
+
+  /**
+    * Returns
+    */
+  val GEOM: TypeInformation[Geom] = GeomTypeInfo.GEOM
 
   /**
     * Returns type information for [[org.apache.flink.types.Row]] with fields of the given types.

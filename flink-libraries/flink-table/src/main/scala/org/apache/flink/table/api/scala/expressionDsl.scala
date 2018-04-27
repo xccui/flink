@@ -172,7 +172,7 @@ trait ImplicitExpressionOperations {
     * If all values are null, 0 is returned.
     */
   def sum0 = Sum0(expr)
-  
+
   /**
     * Returns the minimum value of field across all input values.
     */
@@ -778,6 +778,7 @@ trait ImplicitExpressionOperations {
     * @return string of 64 hexadecimal digits or null
     */
   def sha256() = Sha256(expr)
+
 }
 
 /**
@@ -1137,6 +1138,38 @@ object concat {
 object concat_ws {
   def apply(separator: Expression, string: Expression, strings: Expression*): Expression = {
     ConcatWs(separator, Seq(string) ++ strings)
+  }
+}
+
+/**
+  * Returns a POINT from WKT representation.
+  */
+object stPointFromText {
+  def apply(wkt: Expression): Expression = {
+    STPointFromText(wkt)
+  }
+}
+
+/**
+  * Returns a WKT string from the given GEOMETRY value.
+  */
+object stAsText {
+  def apply(geo: Expression): Expression = {
+    STAsText(geo)
+  }
+}
+
+/**
+  * Returns a specified GEOMETRY value from WKT representation.
+  * The spatial reference id (srid) is optional.
+  */
+object stGeomFromText {
+  def apply(wkt: Expression, srid: Expression): Expression = {
+    STGeomFromText(wkt, srid)
+  }
+
+  def apply(wkt: Expression) = {
+    STGeomFromText(wkt)
   }
 }
 

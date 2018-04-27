@@ -18,6 +18,8 @@
 
 package org.apache.flink.table.functions.sql
 
+import com.google.common.collect.ImmutableList
+import org.apache.calcite.runtime.PredicateImpl
 import org.apache.calcite.sql.{SqlFunction, SqlFunctionCategory, SqlKind}
 import org.apache.calcite.sql.`type`._
 
@@ -120,4 +122,38 @@ object ScalarSqlFunctions {
     OperandTypes.sequence("'(TIMESTAMP, FORMAT)'", OperandTypes.DATETIME, OperandTypes.STRING),
     SqlFunctionCategory.TIMEDATE
   )
+
+  val ST_POINT_FROM_TEXT = new SqlFunction(
+    "ST_POINT_FROM_TEXT",
+    SqlKind.OTHER_FUNCTION,
+    ReturnTypes.cascade(
+      ReturnTypes.explicit(SqlTypeName.GEOMETRY), SqlTypeTransforms.TO_NULLABLE),
+    InferTypes.RETURN_TYPE,
+    OperandTypes.STRING,
+    SqlFunctionCategory.STRING
+  )
+
+  val ST_AS_TEXT = new SqlFunction(
+    "ST_AS_TEXT",
+    SqlKind.OTHER_FUNCTION,
+    ReturnTypes.cascade(ReturnTypes.explicit(SqlTypeName.VARCHAR), SqlTypeTransforms.TO_NULLABLE),
+    InferTypes.RETURN_TYPE,
+    OperandTypes.ANY, // TODO We need a new Geom operand type here.
+    SqlFunctionCategory.STRING
+  )
+
+  val ST_GEOM_FROM_TEXT = new SqlFunction(
+    "ST_GEOM_FROM_TEXT",
+    SqlKind.OTHER_FUNCTION,
+    ReturnTypes.cascade(
+      ReturnTypes.explicit(SqlTypeName.GEOMETRY), SqlTypeTransforms.TO_NULLABLE),
+    InferTypes.RETURN_TYPE,
+    OperandTypes.family(ImmutableList.of(SqlTypeFamily.STRING, SqlTypeFamily.INTEGER),
+      // the second Integer parameter(index = 1) is optimal
+      new PredicateImpl[Integer]() {
+        def test(number: Integer) = number == 1
+      }),
+    SqlFunctionCategory.STRING
+  )
+
 }

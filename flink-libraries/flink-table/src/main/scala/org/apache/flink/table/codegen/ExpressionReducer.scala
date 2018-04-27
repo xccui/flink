@@ -76,7 +76,8 @@ class ExpressionReducer(config: TableConfig)
            (SqlTypeName.ROW, _) |
            (SqlTypeName.ARRAY, _) |
            (SqlTypeName.MAP, _) |
-           (SqlTypeName.MULTISET, _) => None
+           (SqlTypeName.MULTISET, _) |
+           (SqlTypeName.GEOMETRY, _)=> None
 
       case (_, e) => Some(e)
     }
@@ -118,7 +119,8 @@ class ExpressionReducer(config: TableConfig)
              SqlTypeName.ROW |
              SqlTypeName.ARRAY |
              SqlTypeName.MAP |
-             SqlTypeName.MULTISET =>
+             SqlTypeName.MULTISET |
+             SqlTypeName.GEOMETRY =>
           reducedValues.add(unreduced)
         // after expression reduce, the literal string has to be escaped
         case SqlTypeName.VARCHAR | SqlTypeName.CHAR =>

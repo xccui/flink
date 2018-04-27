@@ -1881,6 +1881,45 @@ class ScalarFunctionsTest extends ScalarTypesTestBase {
   }
 
   // ----------------------------------------------------------------------------------------------
+  // Geometric functions
+  // ----------------------------------------------------------------------------------------------
+
+  @Test
+  def testSTPointFromText(): Unit = {
+    testAllApis(
+      stPointFromText("POINT(-71.064544 42.28787)"),
+      "stPointFromText('POINT(-71.064544 42.28787)')",
+      "ST_POINT_FROM_TEXT('POINT(-71.064544 42.28787)')",
+      "{\"x\":-71.064544,\"y\":42.28787}")
+  }
+
+  @Test
+  def testSTAsText(): Unit = {
+    testAllApis(
+      stAsText(stPointFromText("POINT(-71.064544 42.28787)")),
+      "stAsText(stPointFromText('POINT(-71.064544 42.28787)'))",
+      "ST_AS_TEXT(ST_POINT_FROM_TEXT('POINT(-71.064544 42.28787)'))",
+      "POINT (-71.064544 42.28787)"
+    )
+  }
+
+  @Test
+  def testSTGeoFromText(): Unit = {
+    testAllApis(
+      stGeomFromText("POINT(-71.064544 42.28787)", 1),
+      "stGeomFromText('POINT(-71.064544 42.28787)', 1)",
+      "ST_GEOM_FROM_TEXT('POINT(-71.064544 42.28787)', 1)",
+      "{\"x\":-71.064544,\"y\":42.28787,\"spatialReference\":{\"wkid\":1}}")
+
+    testAllApis(
+      stGeomFromText("POINT(-71.064544 42.28787)"),
+      "stGeomFromText('POINT(-71.064544 42.28787)')",
+      "ST_GEOM_FROM_TEXT('POINT(-71.064544 42.28787)')",
+      "{\"x\":-71.064544,\"y\":42.28787}")
+  }
+
+
+  // ----------------------------------------------------------------------------------------------
   // Other functions
   // ----------------------------------------------------------------------------------------------
 

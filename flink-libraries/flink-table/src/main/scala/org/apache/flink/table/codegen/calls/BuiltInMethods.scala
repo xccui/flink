@@ -21,7 +21,7 @@ import java.lang.{Long => JLong}
 import java.math.{BigDecimal => JBigDecimal}
 
 import org.apache.calcite.linq4j.tree.Types
-import org.apache.calcite.runtime.SqlFunctions
+import org.apache.calcite.runtime.{GeoFunctions, SqlFunctions}
 import org.apache.flink.table.runtime.functions.ScalarFunctions
 
 object BuiltInMethods {
@@ -110,4 +110,17 @@ object BuiltInMethods {
     classOf[String])
 
   val BIN = Types.lookupMethod(classOf[JLong], "toBinaryString", classOf[Long])
+
+  val ST_POINT_FROM_TEXT =
+    Types.lookupMethod(classOf[GeoFunctions], "ST_PointFromText", classOf[String])
+
+  val ST_AS_TEXT =
+    Types.lookupMethod(classOf[GeoFunctions], "ST_AsText", classOf[GeoFunctions.Geom])
+
+  val ST_GEOM_FROM_TEXT_1 =
+    Types.lookupMethod(classOf[GeoFunctions], "ST_GeomFromText", classOf[String])
+
+  val ST_GEOM_FROM_TEXT_2 =
+    Types.lookupMethod(classOf[GeoFunctions], "ST_GeomFromText", classOf[String], classOf[Int])
+
 }

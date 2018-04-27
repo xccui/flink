@@ -28,9 +28,11 @@ import org.apache.calcite.util.BuiltInMethod
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo._
 import org.apache.flink.api.common.typeinfo.{BasicTypeInfo, SqlTimeTypeInfo, TypeInformation}
 import org.apache.flink.api.java.typeutils.GenericTypeInfo
+import org.apache.flink.table.api.Types
 import org.apache.flink.table.functions.sql.ScalarSqlFunctions
 import org.apache.flink.table.functions.sql.ScalarSqlFunctions._
 import org.apache.flink.table.functions.utils.{ScalarSqlFunction, TableSqlFunction}
+import org.apache.flink.table.runtime.types.GeomTypeInfo
 import org.apache.flink.table.typeutils.TimeIntervalTypeInfo
 
 import scala.collection.mutable
@@ -563,6 +565,38 @@ object FunctionGenerator {
     ScalarSqlFunctions.SHA256,
     Seq(STRING_TYPE_INFO),
     new HashCalcCallGen("SHA-256")
+  )
+
+  // ----------------------------------------------------------------------------------------------
+  // GEOMETRIC functions
+  // ----------------------------------------------------------------------------------------------
+
+  addSqlFunctionMethod(
+    ScalarSqlFunctions.ST_POINT_FROM_TEXT,
+    Seq(STRING_TYPE_INFO),
+    Types.GEOM,
+    BuiltInMethods.ST_POINT_FROM_TEXT
+  )
+
+  addSqlFunctionMethod(
+    ScalarSqlFunctions.ST_AS_TEXT,
+    Seq(new GeomTypeInfo),
+    STRING_TYPE_INFO,
+    BuiltInMethods.ST_AS_TEXT
+  )
+
+  addSqlFunctionMethod(
+    ScalarSqlFunctions.ST_GEOM_FROM_TEXT,
+    Seq(STRING_TYPE_INFO, INT_TYPE_INFO),
+    Types.GEOM,
+    BuiltInMethods.ST_GEOM_FROM_TEXT_2
+  )
+
+  addSqlFunctionMethod(
+    ScalarSqlFunctions.ST_GEOM_FROM_TEXT,
+    Seq(STRING_TYPE_INFO),
+    Types.GEOM,
+    BuiltInMethods.ST_GEOM_FROM_TEXT_1
   )
 
   // ----------------------------------------------------------------------------------------------
