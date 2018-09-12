@@ -51,23 +51,6 @@ class JoinValidationTest extends TableTestBase {
   }
 
   /**
-    * At least one equi-join predicate required.
-    */
-  @Test(expected = classOf[TableException])
-  def testInnerJoinWithoutEquiPredicate(): Unit = {
-    val util = streamTestUtil()
-    val left = util.addTable[(Long, Int, String)]('a, 'b, 'c, 'ltime.rowtime)
-    val right = util.addTable[(Long, Int, String)]('d, 'e, 'f, 'rtime.rowtime)
-
-    val resultTable = left.join(right)
-      .where('ltime >= 'rtime - 5.minutes && 'ltime < 'rtime + 3.seconds)
-      .select('a, 'e, 'ltime)
-
-    val expected = ""
-    util.verifyTable(resultTable, expected)
-  }
-
-  /**
     * At least one equi-join predicate required for non-window inner join.
     */
   @Test(expected = classOf[TableException])

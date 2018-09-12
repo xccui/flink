@@ -29,6 +29,7 @@ import org.apache.flink.table.plan.nodes.FlinkConventions
 import org.apache.flink.table.plan.nodes.datastream.DataStreamJoin
 import org.apache.flink.table.plan.nodes.logical.FlinkLogicalJoin
 import org.apache.flink.table.plan.schema.RowSchema
+import org.apache.flink.table.plan.util.JoinPlanUtil
 import org.apache.flink.table.runtime.join.WindowJoinUtil
 
 import scala.collection.JavaConverters._
@@ -62,23 +63,29 @@ class DataStreamJoinRule
     val join: FlinkLogicalJoin = call.rel(0).asInstanceOf[FlinkLogicalJoin]
     val joinInfo = join.analyzeCondition
 
-    val (windowBounds, remainingPreds) = WindowJoinUtil.extractWindowBoundsFromPredicate(
-      joinInfo.getRemaining(join.getCluster.getRexBuilder),
-      join.getLeft.getRowType.getFieldCount,
-      join.getRowType,
-      join.getCluster.getRexBuilder,
-      TableConfig.DEFAULT)
+    // We need an equi-join predicate or a single row restriction for materialized table join.
+    if (JoinPlanUtil.hasEqualityPredicates(joinInfo) ||
+      JoinPlanUtil.isSingleRowJoin(join.getJoinType, join.getLeft, join.getRight)) {
+      val (windowBounds, remainingPreds) = WindowJoinUtil.extractWindowBoundsFromPredicate(
+        joinInfo.getRemaining(join.getCluster.getRexBuilder),
+        join.getLeft.getRowType.getFieldCount,
+        join.getRowType,
+        join.getCluster.getRexBuilder,
+        TableConfig.DEFAULT)
 
-    // remaining predicate must not access time attributes
-    val remainingPredsAccessTime = remainingPreds.isDefined &&
-      accessesTimeAttribute(remainingPreds.get, join.getRowType)
+      // remaining predicate must not access time attributes
+      val remainingPredsAccessTime = remainingPreds.isDefined &&
+        accessesTimeAttribute(remainingPreds.get, join.getRowType)
 
-    // Check that no event-time attributes are in the input because non-window join is unbounded
-    // and we don't know how much to hold back watermarks.
-    val rowTimeAttrInOutput = join.getRowType.getFieldList.asScala
-      .exists(f => FlinkTypeFactory.isRowtimeIndicatorType(f.getType))
+      // Check that no event-time attributes are in the input because non-window join is unbounded
+      // and we don't know how much to hold back watermarks.
+      val rowTimeAttrInOutput = join.getRowType.getFieldList.asScala
+        .exists(f => FlinkTypeFactory.isRowtimeIndicatorType(f.getType))
 
-    windowBounds.isEmpty && !remainingPredsAccessTime && !rowTimeAttrInOutput
+      windowBounds.isEmpty && !remainingPredsAccessTime && !rowTimeAttrInOutput
+    } else {
+      false
+    }
   }
 
   override def convert(rel: RelNode): RelNode = {

@@ -189,6 +189,60 @@ class JoinITCase extends StreamingWithStateTestBase {
     StreamITCase.compareWithList(expected)
   }
 
+  /** test rowtime inner join without equi-predicate **/
+  @Test
+  def testRowTimeInnerJoinWithoutEuqiPred(): Unit = {
+    val env = StreamExecutionEnvironment.getExecutionEnvironment
+    val tEnv = TableEnvironment.getTableEnvironment(env)
+    env.setStateBackend(getStateBackend)
+    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+    StreamITCase.clear
+
+    val sqlQuery =
+      """
+        |SELECT t1.key, t2.id, t1.id
+        |FROM T1 as t1 join T2 as t2 ON
+        |  t1.rt BETWEEN t2.rt - INTERVAL '5' SECOND AND
+        |    t2.rt + INTERVAL '6' SECOND
+        |""".stripMargin
+
+    val data1 = new mutable.MutableList[(String, String, Long)]
+    data1.+=(("A", "LEFT0.999", 999L))
+    data1.+=(("A", "LEFT1", 1000L))
+    data1.+=(("B", "LEFT3", 3000L))
+    data1.+=(("C", "LEFT4", 4000L))
+    data1.+=(("A", "LEFT6", 6000L))
+
+    val data2 = new mutable.MutableList[(String, String, Long)]
+    data2.+=(("A", "RIGHT6", 6000L))
+    data2.+=(("B", "RIGHT7", 7000L))
+    data2.+=((null.asInstanceOf[String], "RIGHT10", 10000L))
+
+    val t1 = env.fromCollection(data1)
+      .assignTimestampsAndWatermarks(new Row3WatermarkExtractor2)
+      .toTable(tEnv, 'key, 'id, 'rt.rowtime)
+    val t2 = env.fromCollection(data2)
+      .assignTimestampsAndWatermarks(new Row3WatermarkExtractor2)
+      .toTable(tEnv, 'key, 'id, 'rt.rowtime)
+
+    tEnv.registerTable("T1", t1)
+    tEnv.registerTable("T2", t2)
+
+    val result = tEnv.sqlQuery(sqlQuery).toAppendStream[Row]
+    result.addSink(new StreamITCase.StringSink[Row])
+    env.execute()
+    val expected = new java.util.ArrayList[String]
+    expected.add("A,RIGHT6,LEFT1")
+    expected.add("B,RIGHT6,LEFT3")
+    expected.add("C,RIGHT6,LEFT4")
+    expected.add("A,RIGHT6,LEFT6")
+    expected.add("B,RIGHT7,LEFT3")
+    expected.add("C,RIGHT7,LEFT4")
+    expected.add("A,RIGHT7,LEFT6")
+    expected.add("A,RIGHT10,LEFT6")
+    StreamITCase.compareWithList(expected)
+  }
+
   /** test rowtime inner join with equi-times **/
   @Test
   def testRowTimeInnerJoinWithEquiTimeAttrs(): Unit = {
