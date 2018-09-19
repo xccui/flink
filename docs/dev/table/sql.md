@@ -36,7 +36,7 @@ For convenience `Table.toString()` automatically registers the table under a uni
 Specifying a Query
 ------------------
 
-The following examples show how to specify a SQL queries on registered and inlined tables.
+The following examples show how to specify a SQL queries on inlined and registered tables.
 
 <div class="codetabs" markdown="1">
 <div data-lang="java" markdown="1">
@@ -227,7 +227,7 @@ Operations
   <tbody>
   	<tr>
   		<td>
-        <strong>Scan / Select / As</strong><br>
+        <strong>Scan / Select / As</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
   		<td>
@@ -240,7 +240,7 @@ SELECT a, c AS d FROM Orders
   	</tr>
     <tr>
       <td>
-        <strong>Where / Filter</strong><br>
+        <strong>Where / Filter</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -253,7 +253,7 @@ SELECT * FROM Orders WHERE a % 2 = 0
     </tr>
     <tr>
       <td>
-        <strong>User-defined Scalar Functions (Scalar UDF)</strong><br>
+        <strong>User-Defined Scalar Functions (Scalar UDF)</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -282,23 +282,22 @@ SELECT PRETTY_PRINT(user) FROM Orders
   <tbody>
     <tr>
       <td>
-        <strong>GroupBy Aggregation</strong><br>
-        <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span><br>
+        <strong>GroupBy Aggregation</strong><br/>
+        <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span><br/>
         <span class="label label-info">Result Updating</span>
       </td>
       <td>
-        <p><b>Note:</b> GroupBy on a streaming table produces an updating result. See the <a href="streaming.html">Streaming Concepts</a> page for details.
-        </p>
 {% highlight sql %}
 SELECT a, SUM(b) as d
 FROM Orders
 GROUP BY a
 {% endhighlight %}
+        <p><b>Note:</b> GroupBy on a streaming table produces an updating result. See the <a href="streaming.html">Streaming Concepts</a> page for details.</p>
       </td>
     </tr>
     <tr>
     	<td>
-        <strong>GroupBy Window Aggregation</strong><br>
+        <strong>GroupBy Window Aggregation</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
     	<td>
@@ -312,11 +311,10 @@ GROUP BY TUMBLE(rowtime, INTERVAL '1' DAY), user
     </tr>
     <tr>
     	<td>
-        <strong>Over Window aggregation</strong><br>
+        <strong>Over Window Aggregation</strong><br/>
         <span class="label label-primary">Streaming</span>
       </td>
     	<td>
-        <p><b>Note:</b> All aggregates must be defined over the same window, i.e., same partitioning, sorting, and range. Currently, only windows with PRECEDING (UNBOUNDED and bounded) to CURRENT ROW range are supported. Ranges with FOLLOWING are not supported yet. ORDER BY must be specified on a single <a href="streaming.html#time-attributes">time attribute</a></p>
 {% highlight sql %}
 SELECT COUNT(amount) OVER (
   PARTITION BY user
@@ -331,12 +329,13 @@ WINDOW w AS (
   ORDER BY proctime
   ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)  
 {% endhighlight %}
+        <p><b>Note:</b> All aggregates must be defined over the same window, i.e., same partitioning, sorting, and range. Currently, only windows with PRECEDING (UNBOUNDED and bounded) to CURRENT ROW range are supported. Ranges with FOLLOWING are not supported yet. ORDER BY must be specified on a single <a href="streaming.html#time-attributes">time attribute</a></p>
       </td>
     </tr>
     <tr>
       <td>
-        <strong>Distinct</strong><br>
-        <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span> <br>
+        <strong>Distinct</strong><br/>
+        <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span> <br/>
         <span class="label label-info">Result Updating</span>
       </td>
       <td>
@@ -348,7 +347,7 @@ SELECT DISTINCT users FROM Orders
     </tr>
     <tr>
       <td>
-        <strong>Grouping sets, Rollup, Cube</strong><br>
+        <strong>Grouping Sets, Rollup, Cube</strong><br/>
         <span class="label label-primary">Batch</span>
       </td>
       <td>
@@ -361,7 +360,7 @@ GROUP BY GROUPING SETS ((user), (product))
     </tr>
     <tr>
       <td>
-        <strong>Having</strong><br>
+        <strong>Having</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -375,7 +374,7 @@ HAVING SUM(amount) > 50
     </tr>
     <tr>
       <td>
-        <strong>User-defined Aggregate Functions (UDAGG)</strong><br>
+        <strong>User-Defined Aggregate Functions (UDAGG)</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -405,29 +404,28 @@ GROUP BY users
   </thead>
   <tbody>
     <tr>
-      <td><strong>Inner Equi-join</strong><br>
+      <td><strong>Inner Equi-Join</strong><br/>
         <span class="label label-primary">Batch</span>
         <span class="label label-primary">Streaming</span>
       </td>
       <td>
         <p>Currently, only equi-joins are supported, i.e., joins that have at least one conjunctive condition with an equality predicate. Arbitrary cross or theta joins are not supported.</p>
-        <p><b>Note:</b> The order of joins is not optimized. Tables are joined in the order in which they are specified in the FROM clause. Make sure to specify tables in an order that does not yield a cross join (Cartesian product) which are not supported and would cause a query to fail.</p>
 {% highlight sql %}
 SELECT *
 FROM Orders INNER JOIN Product ON Orders.productId = Product.id
 {% endhighlight %}
-        <p><b>Note:</b> For streaming queries the required state to compute the query result might grow infinitely depending on the number of distinct input rows. Please provide a query configuration with valid retention interval to prevent excessive state size. See <a href="streaming.html">Streaming Concepts</a> for details.</p>
+        <p><b>Note:</b> The order of joins is not optimized. Tables are joined in the order in which they are specified in the FROM clause. Make sure to specify tables in an order that does not yield a cross join (Cartesian product) which are not supported and would cause a query to fail.
+        Besides, for streaming queries the required state to compute the query result might grow infinitely depending on the number of distinct input rows. Please provide a query configuration with valid retention interval to prevent excessive state size. See <a href="streaming.html">Streaming Concepts</a> for details.</p>
       </td>
     </tr>
     <tr>
-      <td><strong>Outer Equi-join</strong><br>
+      <td><strong>Outer Equi-Join</strong><br/>
         <span class="label label-primary">Batch</span>
         <span class="label label-primary">Streaming</span>
         <span class="label label-info">Result Updating</span>
       </td>
       <td>
         <p>Currently, only equi-joins are supported, i.e., joins that have at least one conjunctive condition with an equality predicate. Arbitrary cross or theta joins are not supported.</p>
-        <p><b>Note:</b> The order of joins is not optimized. Tables are joined in the order in which they are specified in the FROM clause. Make sure to specify tables in an order that does not yield a cross join (Cartesian product) which are not supported and would cause a query to fail.</p>
 {% highlight sql %}
 SELECT *
 FROM Orders LEFT JOIN Product ON Orders.productId = Product.id
@@ -438,18 +436,17 @@ FROM Orders RIGHT JOIN Product ON Orders.productId = Product.id
 SELECT *
 FROM Orders FULL OUTER JOIN Product ON Orders.productId = Product.id
 {% endhighlight %}
-        <p><b>Note:</b> For streaming queries the required state to compute the query result might grow infinitely depending on the number of distinct input rows. Please provide a query configuration with valid retention interval to prevent excessive state size. See <a href="streaming.html">Streaming Concepts</a> for details.</p>
+        <p><b>Note:</b> The order of joins is not optimized. Tables are joined in the order in which they are specified in the FROM clause. Make sure to specify tables in an order that does not yield a cross join (Cartesian product) which are not supported and would cause a query to fail.
+        Besides, for streaming queries the required state to compute the query result might grow infinitely depending on the number of distinct input rows. Please provide a query configuration with valid retention interval to prevent excessive state size. See <a href="streaming.html">Streaming Concepts</a> for details.</p>
       </td>
     </tr>
     <tr>
-      <td><strong>Time-windowed Join</strong><br>
+      <td><strong>Time-Windowed Join</strong><br/>
         <span class="label label-primary">Batch</span>
         <span class="label label-primary">Streaming</span>
       </td>
       <td>
-        <p><b>Note:</b> Time-windowed joins are a subset of regular joins that can be processed in a streaming fashion.</p>
-
-        <p>A time-windowed join requires at least one equi-join predicate and a join condition that bounds the time on both sides. Such a condition can be defined by two appropriate range predicates (<code>&lt;, &lt;=, &gt;=, &gt;</code>), a <code>BETWEEN</code> predicate, or a single equality predicate that compares <a href="streaming.html#time-attributes">time attributes</a> of the same type (i.e., processing time or event time) of both input tables.</p> 
+        <p>A time-windowed join requires at least one equi-join predicate and a join condition that bounds the time attributes on both sides. Such a condition can be defined by two appropriate range predicates (<code>&lt;, &lt;=, &gt;=, &gt;</code>), a <code>BETWEEN</code> predicate, or a single equality predicate that compares <a href="streaming.html#time-attributes">time attributes</a> of the same type (i.e., processing time or row time) of both input tables.</p> 
         <p>For example, the following predicates are valid window join conditions:</p>
           
         <ul>
@@ -470,7 +467,7 @@ The example above will join all orders with their corresponding shipments if the
     </tr>
     <tr>
     	<td>
-        <strong>Expanding arrays into a relation</strong><br>
+        <strong>Expanding Arrays into a Relation</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
     	<td>
@@ -483,7 +480,7 @@ FROM Orders CROSS JOIN UNNEST(tags) AS t (tag)
     </tr>
     <tr>
     	<td>
-        <strong>Join with User Defined Table Functions (UDTF)</strong><br>
+        <strong>Join with User Defined Table Functions (UDTF)</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
     	<td>
@@ -521,7 +518,7 @@ FROM Orders LEFT JOIN LATERAL TABLE(unnest_udtf(tags)) t AS tag ON TRUE
   <tbody>
   	<tr>
       <td>
-        <strong>Union</strong><br>
+        <strong>Union</strong><br/>
         <span class="label label-primary">Batch</span>
       </td>
       <td>
@@ -537,7 +534,7 @@ FROM (
     </tr>
     <tr>
       <td>
-        <strong>UnionAll</strong><br>
+        <strong>UnionAll</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -554,7 +551,7 @@ FROM (
 
     <tr>
       <td>
-        <strong>Intersect / Except</strong><br>
+        <strong>Intersect / Except</strong><br/>
         <span class="label label-primary">Batch</span>
       </td>
       <td>
@@ -579,7 +576,7 @@ FROM (
 
     <tr>
       <td>
-        <strong>In</strong><br>
+        <strong>In</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -597,7 +594,7 @@ WHERE product IN (
 
     <tr>
       <td>
-        <strong>Exists</strong><br>
+        <strong>Exists</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -631,22 +628,21 @@ WHERE product EXISTS (
   <tbody>
   	<tr>
       <td>
-        <strong>Order By</strong><br>
+        <strong>Order By</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
-<b>Note:</b> The result of streaming queries must be primarily sorted on an ascending <a href="streaming.html#time-attributes">time attribute</a>. Additional sorting attributes are supported.
-
 {% highlight sql %}
 SELECT *
 FROM Orders
 ORDER BY orderTime
 {% endhighlight %}
+<p><b>Note:</b> The result of streaming queries must be primarily sorted on an ascending <a href="streaming.html#time-attributes">time attribute</a>. Additional sorting attributes are supported.</p>
       </td>
     </tr>
 
     <tr>
-      <td><strong>Limit</strong><br>
+      <td><strong>Limit</strong><br/>
         <span class="label label-primary">Batch</span>
       </td>
       <td>
@@ -677,7 +673,7 @@ LIMIT 3
   <tbody>
     <tr>
       <td>
-        <strong>Insert Into</strong><br>
+        <strong>Insert Into</strong><br/>
         <span class="label label-primary">Batch</span> <span class="label label-primary">Streaming</span>
       </td>
       <td>
@@ -712,15 +708,15 @@ Group windows are defined in the `GROUP BY` clause of a SQL query. Just like que
   <tbody>
     <tr>
       <td><code>TUMBLE(time_attr, interval)</code></td>
-      <td>Defines a tumbling time window. A tumbling time window assigns rows to non-overlapping, continuous windows with a fixed duration (<code>interval</code>). For example, a tumbling window of 5 minutes groups rows in 5 minutes intervals. Tumbling windows can be defined on event-time (stream + batch) or processing-time (stream).</td>
+      <td>Defines a tumbling time window. A tumbling time window assigns rows to non-overlapping, continuous windows with a fixed duration (<code>interval</code>). For example, a tumbling window of 5 minutes groups rows in 5 minutes intervals. Tumbling windows can be defined on rowtime (stream + batch) or processing-time (stream).</td>
     </tr>
     <tr>
       <td><code>HOP(time_attr, interval, interval)</code></td>
-      <td>Defines a hopping time window (called sliding window in the Table API). A hopping time window has a fixed duration (second <code>interval</code> parameter) and hops by a specified hop interval (first <code>interval</code> parameter). If the hop interval is smaller than the window size, hopping windows are overlapping. Thus, rows can be assigned to multiple windows. For example, a hopping window of 15 minutes size and 5 minute hop interval assigns each row to 3 different windows of 15 minute size, which are evaluated in an interval of 5 minutes. Hopping windows can be defined on event-time (stream + batch) or processing-time (stream).</td>
+      <td>Defines a hopping time window (called sliding window in the Table API). A hopping time window has a fixed duration (second <code>interval</code> parameter) and hops by a specified hop interval (first <code>interval</code> parameter). If the hop interval is smaller than the window size, hopping windows are overlapping. Thus, rows can be assigned to multiple windows. For example, a hopping window of 15 minutes size and 5 minute hop interval assigns each row to 3 different windows of 15 minute size, which are evaluated in an interval of 5 minutes. Hopping windows can be defined on rowtime (stream + batch) or processing-time (stream).</td>
     </tr>
     <tr>
       <td><code>SESSION(time_attr, interval)</code></td>
-      <td>Defines a session time window. Session time windows do not have a fixed duration but their bounds are defined by a time <code>interval</code> of inactivity, i.e., a session window is closed if no event appears for a defined gap period. For example a session window with a 30 minute gap starts when a row is observed after 30 minutes inactivity (otherwise the row would be added to an existing window) and is closed if no row is added within 30 minutes. Session windows can work on event-time (stream + batch) or processing-time (stream).</td>
+      <td>Defines a session time window. Session time windows do not have a fixed duration but their bounds are defined by a time <code>interval</code> of inactivity, i.e., a session window is closed if no event appears for a defined gap period. For example a session window with a 30 minute gap starts when a row is observed after 30 minutes inactivity (otherwise the row would be added to an existing window) and is closed if no row is added within 30 minutes. Session windows can work on rowtime (stream + batch) or processing-time (stream).</td>
     </tr>
   </tbody>
 </table>
@@ -728,7 +724,7 @@ Group windows are defined in the `GROUP BY` clause of a SQL query. Just like que
 
 #### Time Attributes
 
-For SQL queries on streaming tables, the `time_attr` argument of the group window function must refer to a valid time attribute that specifies the processing time or event time of rows. See the [documentation of time attributes](streaming.html#time-attributes) to learn how to define time attributes.
+For SQL queries on streaming tables, the `time_attr` argument of the group window function must refer to a valid time attribute that specifies the processing time or row time of rows. See the [documentation of time attributes](streaming.html#time-attributes) to learn how to define time attributes.
 
 For SQL on batch tables, the `time_attr` argument of the group window function must be an attribute of type `TIMESTAMP`.
 
@@ -797,7 +793,7 @@ DataStream<Tuple3<Long, String, Integer>> ds = env.addSource(...);
 // register the DataStream as table "Orders"
 tableEnv.registerDataStream("Orders", ds, "user, product, amount, proctime.proctime, rowtime.rowtime");
 
-// compute SUM(amount) per day (in event-time)
+// compute SUM(amount) per day (in rowtime)
 Table result1 = tableEnv.sqlQuery(
   "SELECT user, " +
   "  TUMBLE_START(rowtime, INTERVAL '1' DAY) as wStart,  " +
@@ -808,11 +804,11 @@ Table result1 = tableEnv.sqlQuery(
 Table result2 = tableEnv.sqlQuery(
   "SELECT user, SUM(amount) FROM Orders GROUP BY TUMBLE(proctime, INTERVAL '1' DAY), user");
 
-// compute every hour the SUM(amount) of the last 24 hours in event-time
+// compute every hour the SUM(amount) of the last 24 hours in rowtime
 Table result3 = tableEnv.sqlQuery(
   "SELECT product, SUM(amount) FROM Orders GROUP BY HOP(rowtime, INTERVAL '1' HOUR, INTERVAL '1' DAY), product");
 
-// compute SUM(amount) per session with 12 hour inactivity gap (in event-time)
+// compute SUM(amount) per session with 12 hour inactivity gap (in rowtime)
 Table result4 = tableEnv.sqlQuery(
   "SELECT user, " +
   "  SESSION_START(rowtime, INTERVAL '12' HOUR) AS sStart, " +
@@ -834,7 +830,7 @@ val ds: DataStream[(Long, String, Int)] = env.addSource(...)
 // register the DataStream under the name "Orders"
 tableEnv.registerDataStream("Orders", ds, 'user, 'product, 'amount, 'proctime.proctime, 'rowtime.rowtime)
 
-// compute SUM(amount) per day (in event-time)
+// compute SUM(amount) per day (in rowtime)
 val result1 = tableEnv.sqlQuery(
     """
       |SELECT
@@ -849,11 +845,11 @@ val result1 = tableEnv.sqlQuery(
 val result2 = tableEnv.sqlQuery(
   "SELECT user, SUM(amount) FROM Orders GROUP BY TUMBLE(proctime, INTERVAL '1' DAY), user")
 
-// compute every hour the SUM(amount) of the last 24 hours in event-time
+// compute every hour the SUM(amount) of the last 24 hours in rowtime
 val result3 = tableEnv.sqlQuery(
   "SELECT product, SUM(amount) FROM Orders GROUP BY HOP(rowtime, INTERVAL '1' HOUR, INTERVAL '1' DAY), product")
 
-// compute SUM(amount) per session with 12 hour inactivity gap (in event-time)
+// compute SUM(amount) per session with 12 hour inactivity gap (in rowtime)
 val result4 = tableEnv.sqlQuery(
     """
       |SELECT

@@ -255,7 +255,7 @@ value1 IN (value2 [, value3]* )
       </td>
       <td>
         <p> Returns TRUE if <i>value1</i> exists in the given list <i>(value2, value3, ...)</i>. 
-        When <i>(value2, value3, ...)</i>. contains NULL, returns TRUE if the element can be found and UNKNOWN otherwise. Always returns UNKNOWN if <i>value1</i> is NULL.</p>
+        When <i>(value2, value3, ...)</i> contains NULL, returns TRUE if the element can be found and UNKNOWN otherwise. Always returns UNKNOWN if <i>value1</i> is NULL.</p>
         <p>E.g., <code>4 IN (1, 2, 3)</code> returns FALSE;
         <code>1 IN (1, 2, NULL)</code> returns TRUE;
         <code>4 IN (1, 2, NULL)</code> returns UNKNOWN.</p>
@@ -296,7 +296,7 @@ value IN (sub-query)
 {% endhighlight %}
       </td>
       <td>
-        <p>Returns TRUE if <i>value</i> is equal to a row returned by sub-query.</p>
+        <p>Returns TRUE if <i>value</i> is equal to a row returned by <i>sub-query</i>.</p>
         <p><b>Note:</b> For streaming queries the operation is rewritten in a join and group operation. The required state to compute the query result might grow infinitely depending on the number of distinct input rows. Please provide a query configuration with valid retention interval to prevent excessive state size. See <a href="streaming.html">Streaming Concepts</a> for details.</p>
       </td>
     </tr>
@@ -1171,7 +1171,7 @@ CEILING(numeric)
 {% endhighlight %}
       </td>
       <td>
-        <p>Rounds <i>numeric</i> up, and returns the smallest number that is greater than or equal to <i>numeric</i>.</p>
+        <p>Rounds <i>numeric</i> up, and returns the smallest integer that is greater than or equal to <i>numeric</i>.</p>
       </td>
     </tr>  
 
@@ -1182,7 +1182,7 @@ FLOOR(numeric)
 {% endhighlight %}
       </td>
       <td>
-        <p>Rounds <i>numeric</i> down, and returns the largest number that is less than or equal to <i>numeric</i>.</p>
+        <p>Rounds <i>numeric</i> down, and returns the largest integer that is less than or equal to <i>numeric</i>.</p>
       </td>
     </tr>
 
@@ -1379,7 +1379,7 @@ RAND_INTEGER(integer1, integer2)
 {% endhighlight %}
      </td>
     <td>
-      <p>Returns a pseudorandom integer value between 0 (inclusive) and the specified value (exclusive) with an initial seed. Two RAND_INTEGER functions will return identical sequences of numbers if they have the same initial seed and bound.</p>
+      <p>Returns a pseudorandom integer value between 0 (inclusive) and <i> integer2 </i> (exclusive) with an initial seed <i> integer1 </i>. Two RAND_INTEGER functions will return identical sequences of integers if they have the same initial seed and bound.</p>
     </td>
    </tr>
 
@@ -2462,7 +2462,7 @@ INITCAP(string)
     <tr>
       <td>
         {% highlight text %}
-CONCAT(string1, string2,...)
+CONCAT(string1, string2, ...)
 {% endhighlight %}
       </td>
       <td>
@@ -2490,7 +2490,7 @@ LPAD(string1, integer, string2)
 {% endhighlight %}
       </td>
       <td>
-        <p>Returns a new string from <i>string1</i> left-padded with <i>string2</i> to a length of <i>integer</i> characters. If the length of <i>string1</i> is shorter than <i>integer</i>, returns <i>string1</i> shortened to <i>integer</i> characters.</p> 
+        <p>Returns a new string from <i>string1</i> left-padded with <i>string2</i> to a length of <i>integer</i> characters. If <i>integer</i> is shorter than the length of <i>string1</i>, returns <i>string1</i> shortened to <i>integer</i> characters.</p> 
         <p>E.g., <code>LPAD('hi',4,'??')</code> returns "??hi"; <code>LPAD('hi',1,'??')</code> returns "h".</p>
       </td>
     </tr>
@@ -2502,7 +2502,7 @@ RPAD(string1, integer, string2)
 {% endhighlight %}
       </td>
       <td>
-        <p>Returns a new string from <i>string1</i> right-padded with <i>string2</i> to a length of <i>integer</i> characters. If the length of <i>string1</i> is shorter than <i>integer</i>, returns <i>string1</i> shortened to <i>integer</i> characters.</p> 
+        <p>Returns a new string from <i>string1</i> right-padded with <i>string2</i> to a length of <i>integer</i> characters. If <i>integer</i> is shorter than the length of <i>string1</i>, returns <i>string1</i> shortened to <i>integer</i> characters.</p> 
         <p>E.g., <code>RPAD('hi',4,'??')</code> returns "hi??", <code>RPAD('hi',1,'??')</code> returns "h".</p>
       </td>
     </tr>
@@ -3311,11 +3311,11 @@ DATE_FORMAT(timestamp, string)
     <tr>
       <td>
         {% highlight text %}
-TIMESTAMPADD(unit, interval, timevalue)
+TIMESTAMPADD(unit, integer, timevalue)
 {% endhighlight %}
       </td>
       <td>
-        <p>Returns a new time value that adds a (signed) integer interval to <i>timevalue</i>. The unit for <i>interval</i> is given by the unit argument, which should be one of the following values: <code>SECOND</code>, <code>MINUTE</code>, <code>HOUR</code>, <code>DAY</code>, <code>WEEK</code>, <code>MONTH</code>, <code>QUARTER</code>, or <code>YEAR</code>.</p> 
+        <p>Returns a new time value that adds a (signed) <i>integer </i> interval to <i>timevalue</i>. The unit for <i>interval</i> is given by the unit argument, which should be one of the following values: <code>SECOND</code>, <code>MINUTE</code>, <code>HOUR</code>, <code>DAY</code>, <code>WEEK</code>, <code>MONTH</code>, <code>QUARTER</code>, or <code>YEAR</code>.</p> 
         <p>E.g., <code>TIMESTAMPADD(WEEK, 1, DATE '2003-01-02')</code> returns <code>2003-01-09</code>.</p>
       </td>
     </tr>
@@ -3857,8 +3857,7 @@ END
 {% endhighlight %}
       </td>
       <td>
-        <p>Returns <i>resultX</i> when the first <i>conditionX</i> is met. 
-        When no condition is met, returns <i>resultZ</i> if it is provided and returns NULL otherwise.</p>
+        <p>Returns <i>resultX</i> when the first <i>conditionX</i> is met. When no condition is met, returns <i>resultZ</i> if it is provided and returns NULL otherwise.</p>
       </td>
     </tr>
 
