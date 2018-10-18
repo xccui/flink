@@ -41,6 +41,7 @@ public class RowCsvInputFormat extends CsvInputFormat<Row> implements ResultType
 	private TypeInformation[] fieldTypeInfos;
 	private int[] fieldPosMap;
 	private boolean emptyColumnAsNull;
+	protected int lineCount = 0;
 
 	public RowCsvInputFormat(Path filePath, TypeInformation[] fieldTypeInfos, String lineDelimiter, String fieldDelimiter, int[] selectedFields, boolean emptyColumnAsNull) {
 
@@ -138,6 +139,7 @@ public class RowCsvInputFormat extends CsvInputFormat<Row> implements ResultType
 		for (int i = 0; i < parsedValues.length; i++) {
 			reuseRow.setField(i, parsedValues[i]);
 		}
+		lineCount++;
 		return reuseRow;
 	}
 

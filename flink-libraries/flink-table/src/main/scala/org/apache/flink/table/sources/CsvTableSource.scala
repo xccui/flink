@@ -173,8 +173,11 @@ class CsvTableSource private (
       selectedFieldTypes,
       rowDelim,
       fieldDelim,
-      selectedFields)
-
+      selectedFields) {
+      override def reachedEnd(): Boolean = {
+        super.reachedEnd() //|| lineCount > 99
+      }
+    }
     inputFormat.setSkipFirstLineAsHeader(ignoreFirstLine)
     inputFormat.setLenient(lenient)
     if (quoteCharacter != null) {
